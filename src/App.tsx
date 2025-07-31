@@ -82,14 +82,14 @@ function App() {
         <h3>🚫 Access Restricted</h3>
         <p>This page is not accessible directly.</p>
         <p>Please use a valid customer URL format:</p>
-        <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '20px auto' }}>
+        {/* <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '20px auto' }}>
           <li><code>https://kyc.celeriz.com/customer123</code></li>
           <li><code>https://kyc.celeriz.com/?customerId=customer123</code></li>
-        </ul>
-        <p style={{ fontSize: '12px', color: '#666' }}>
+        </ul> */}
+        {/* <p style={{ fontSize: '12px', color: '#666' }}>
           API Endpoint: POST {getApiUrl()}<br/>
-          API Key: 758034
-        </p>
+         
+        </p> */}
       </div>
     );
   }
