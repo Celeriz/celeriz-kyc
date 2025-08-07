@@ -47,7 +47,7 @@ function App() {
           },
           body: JSON.stringify({
             customerId: id,
-            kycUrl: 'https://onramp.money/main/profile/?appId=1486284&kybData=d15bb9ae90ac307173d5f8858feb664e68e92912ddcb9260e08d116975a447e240cc2a63970e90bd4e0bb17ef3bac0a66f19745c52bab385b861b94e000ea796&closeAfterLogin=false'
+            kycUrl: 'https://onramp.money/main/profile/?appId=1486284&kybData=72ed522030f64ab00e6025d794fa488e5e4e60775b47b4b333e00c21c5d56e577ee244e074779ccb6c8f52ae81af2ce80597db99a24382964bebfb03ed0761dd&kycRedirectUrl=https%3A%2F%2Fexample.com%2Fkyc-callback'
           })
         });
 
