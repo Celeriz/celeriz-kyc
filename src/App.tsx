@@ -1,72 +1,73 @@
-import React, { useEffect, useState } from 'react';
-import { OnrampWebSDK } from '@onramp.money/onramp-web-sdk';
+import React, { useEffect, useState } from "react";
+import { OnrampWebSDK } from "@onramp.money/onramp-web-sdk";
 
 function App() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [customerId, setCustomerId] = useState('');
+  const [error, setError] = useState("");
+  const [customerId, setCustomerId] = useState("");
 
   // Get API URL based on environment
   const getApiUrl = () => {
-    if (window.location.hostname === 'localhost') {
-      return 'http://localhost:3001/api/kyc-url';
+    if (window.location.hostname === "localhost") {
+      return "http://localhost:3001/api/kyc-url";
     }
     return `${window.location.origin}/api/kyc-url`;
   };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlCustomerId = urlParams.get('customerId');
+    const urlCustomerId = urlParams.get("customerId");
+    const kycUrl = urlParams.get("kycUrl");
     let id = urlCustomerId;
-    
+
     if (!id) {
-      const pathParts = window.location.pathname.split('/');
+      const pathParts = window.location.pathname.split("/");
       const pathCustomerId = pathParts[pathParts.length - 1];
-      if (pathCustomerId && pathCustomerId !== '') {
+      if (pathCustomerId && pathCustomerId !== "") {
         id = pathCustomerId;
       }
     }
-    
+
     if (!id) {
-      setError('Access restricted. Please use a valid customer URL.');
+      setError("Access restricted. Please use a valid customer URL.");
       return;
     }
-    
+
     setCustomerId(id);
 
     const fetchWidgetUrl = async () => {
       setLoading(true);
-      setError('');
-      
+      setError("");
+
       try {
         const response = await fetch(getApiUrl(), {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'X-API-Key': '758034',
-            'Content-Type': 'application/json'
+            "X-API-Key": "758034",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             customerId: id,
-            kycUrl: 'https://onramp.money/main/profile/?appId=1486284&kybData=72ed522030f64ab00e6025d794fa488e5e4e60775b47b4b333e00c21c5d56e577ee244e074779ccb6c8f52ae81af2ce80597db99a24382964bebfb03ed0761dd&kycRedirectUrl=https%3A%2F%2Fexample.com%2Fkyc-callback'
-          })
+            kycUrl: kycUrl,
+          }),
         });
 
         const data = await response.json();
-        
+
         if (data.success) {
           const onrampSDK = new OnrampWebSDK({
             appId: data.data.sdkConfig.appId,
-            widgetUrl: data.data.sdkConfig.widgetUrl
+            widgetUrl: data.data.sdkConfig.widgetUrl,
           });
-          
+
           setTimeout(() => {
             onrampSDK.show();
           }, 100);
         } else {
-          setError(data.message || 'Failed to fetch widget URL');
+          setError(data.message || "Failed to fetch widget URL");
         }
       } catch (err) {
-        setError('Failed to connect to API');
+        setError("Failed to connect to API");
       } finally {
         setLoading(false);
       }
@@ -76,9 +77,9 @@ function App() {
   }, []);
 
   // Show restricted access message if no customer ID
-  if (!customerId && error.includes('Access restricted')) {
+  if (!customerId && error.includes("Access restricted")) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div style={{ padding: "20px", textAlign: "center" }}>
         <h3>🚫 Access Restricted</h3>
         <p>This page is not accessible directly.</p>
         <p>Please use a valid customer URL format:</p>
@@ -97,16 +98,16 @@ function App() {
   // Show loading or error, but keep it minimal
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div style={{ padding: "20px", textAlign: "center" }}>
         <p>Loading...</p>
       </div>
     );
   }
 
-  if (error && !error.includes('Access restricted')) {
+  if (error && !error.includes("Access restricted")) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <p style={{ color: 'red' }}>Error: {error}</p>
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <p style={{ color: "red" }}>Error: {error}</p>
       </div>
     );
   }
