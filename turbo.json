@@ -2,15 +2,33 @@
   "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": ["**/.env.*local"],
   "tasks": {
+    "build": {
+      "dependsOn": ["^build", "^db:generate"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": ["DATABASE_URL"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"]
+    },
     "dev": {
+      "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true
     },
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    "db:generate": {
+      "cache": false
     },
-    "lint": {},
+    "db:migrate": {
+      "cache": false,
+      "persistent": true // This is necessary to interact with the CLI and assign names to your database migrations.
+    },
+    "db:deploy": {
+      "cache": false
+    },
     "test": {},
     "test:e2e": {}
   }

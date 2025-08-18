@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  phone    String   @unique
+  password String
+  name     String
+  role     UserRole
+  isActive Boolean  @default(true)
+
+  // Customer specific fields
+  customerProfile CustomerProfile?
+  kycData         KYC?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  CUSTOMER
+}
+
+model CustomerProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Additional customer specific fields
+  dateOfBirth DateTime?
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customer_profiles")
+}
+
+model KYC {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Third-party KYC integration
+  kycProvider String? // "onramp", "plain", etc.
+  kycId       String? @unique // External KYC ID from provider
+  kycData     Json? // Store any additional KYC data from provider
+  kycUrl      String? // URL to KYC document or verification page
+
+  kycStatus KYCStatus @default(NOT_STARTED)
+
+  // Verification details
+  verifiedAt      DateTime?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("kyc_documents")
+}
+
+enum KYCStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BASIC_COMPLETED
+  ADVANCED_COMPLETED
+  TEMP_FAILURE
+  PERMANENT_FAILURE
+}
