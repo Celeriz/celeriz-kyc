@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "env": {
+    "API_KEY": "758034",
+    "NODE_ENV": "production"
+  }
+} 
