@@ -17,11 +17,10 @@ model User {
   role     UserRole
   isActive Boolean  @default(true)
 
-  // Customer specific fields
-  customerProfile CustomerProfile?
-  kycData         KYC?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  kycData KYC?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
@@ -30,31 +29,13 @@ enum UserRole {
   CUSTOMER
 }
 
-model CustomerProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Additional customer specific fields
-  dateOfBirth DateTime?
-  address     String?
-  city        String?
-  state       String?
-  pincode     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("customer_profiles")
-}
-
 model KYC {
   id     String @id @default(cuid())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Third-party KYC integration
-  kycProvider String? // "onramp", "plain", etc.
+  kycProvider String? // "onramp", "plaid", etc.
   kycId       String? @unique // External KYC ID from provider
   kycData     Json? // Store any additional KYC data from provider
   kycUrl      String? // URL to KYC document or verification page
