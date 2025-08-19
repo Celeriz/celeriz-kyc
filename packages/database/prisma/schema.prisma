@@ -69,6 +69,7 @@ model KycSession {
   status            KycStatus @default(NOT_STARTED)
   kycLink           String? // Link returned by KYC provider
   providerSessionId String? // Session ID from KYC provider
+  kycProvider       String? // e.g. "kycProviderName"
   providerData      Json? // Store any additional data from provider
 
   // Track which client initiated this KYC

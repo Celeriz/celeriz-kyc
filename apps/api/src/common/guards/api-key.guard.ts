@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { prisma } from '@repo/db';
+import { AuthClient } from 'src/types/client.types';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
@@ -26,7 +27,8 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Invalid API key');
     }
 
-    request.client = client; // Attach client to request
+    request.client = client as AuthClient; // Attach client to request
+
     return true;
   }
 }
