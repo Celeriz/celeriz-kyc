@@ -9,7 +9,10 @@ import {
   getOnrampMoneyKycStatus,
   getOnrampMoneyKycUrl,
 } from 'src/apis/onramp-money/kyc';
-import { StartKycResponseDto } from './dto/kyc-response.dto';
+import {
+  KycStatusResponseDto,
+  StartKycResponseDto,
+} from './dto/kyc-response.dto';
 
 @Injectable()
 export class KycService {
@@ -112,6 +115,44 @@ export class KycService {
       kycId: updatedKycSession.id!,
       kycLink: updatedKycSession.kycLink!,
       kycStatus: updatedKycSession.status,
+    };
+  }
+
+  async getKycStatusByClientUserId(
+    clientId: string,
+    clientUserId: string,
+  ): Promise<KycStatusResponseDto> {
+    const clientUser = await prisma.clientUser.findUnique({
+      where: {
+        clientId_clientUserId: {
+          clientId: clientId,
+          clientUserId,
+        },
+      },
+      include: {
+        user: {
+          include: { kycSession: true },
+        },
+      },
+    });
+
+    if (!clientUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!clientUser.user.kycSession) {
+      throw new NotFoundException(
+        'KYC session not found for user, please start new KYC session',
+      );
+    }
+
+    const session = clientUser.user.kycSession;
+
+    return {
+      clientUserId: clientUser.clientUserId,
+      kycId: session.id,
+      kycLink: session.kycLink || '',
+      kycStatus: session.status,
     };
   }
 

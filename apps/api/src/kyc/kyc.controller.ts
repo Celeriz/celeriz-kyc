@@ -1,7 +1,6 @@
 import { Controller, Get, HttpStatus, Param, UseGuards } from '@nestjs/common';
 import { KycService } from './kyc.service';
 import {
-  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -14,28 +13,24 @@ import { StartKycResponseDto } from './dto/kyc-response.dto';
 
 @Controller('kyc')
 @UseGuards(ApiKeyGuard)
-@ApiTags('Users')
+@ApiTags('KYC')
 @ApiSecurity('X-API-KEY')
 export class KycController {
   constructor(private readonly kycService: KycService) {}
 
-  // @Get('url')
-  // @ApiOperation({
-  //   summary: 'Get KYC URL for user verification',
-  //   description: 'Generate a KYC verification URL for a specific user',
-  // })
-  // async getKycUrl(user: AuthenticatedUser) {
-  //   return this.kycService.getKycUrl(user);
-  // }
-
-  // @Get('status')
-  // @ApiOperation({
-  //   summary: 'Get KYC verification status',
-  //   description: 'Generate KYC verification status for a specific user',
-  // })
-  // getKycStatus(user: AuthenticatedUser) {
-  //   return this.kycService.getUserKycStatus(user);
-  // }
+  @Get('status/:clientUserId')
+  @ApiOperation({ summary: 'Get KYC verification status' })
+  @ApiResponse({ status: HttpStatus.OK, type: StartKycResponseDto })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid API key',
+  })
+  getKycStatus(
+    @CurrentClient() client: AuthClient,
+    @Param('clientUserId') clientUserId: string,
+  ) {
+    return this.kycService.getKycStatusByClientUserId(client.id, clientUserId);
+  }
 
   @Get('start/:clientUserId')
   @ApiOperation({ summary: 'Start KYC process' })

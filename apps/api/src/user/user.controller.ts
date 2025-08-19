@@ -11,7 +11,6 @@ import { UserService } from './user.service';
 import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 import { CreateOrGetUserDto } from './dto/user.dto';
 import {
-  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiSecurity,

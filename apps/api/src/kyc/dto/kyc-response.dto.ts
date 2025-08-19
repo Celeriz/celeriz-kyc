@@ -16,3 +16,19 @@ export class StartKycResponseDto {
   })
   kycStatus: KycStatus;
 }
+
+export class KycStatusResponseDto {
+  @ApiProperty()
+  clientUserId: string;
+
+  @ApiProperty()
+  kycId: string;
+
+  @ApiProperty()
+  kycLink: string;
+
+  @ApiProperty({
+    enum: KycStatus,
+  })
+  kycStatus: KycStatus;
+}
