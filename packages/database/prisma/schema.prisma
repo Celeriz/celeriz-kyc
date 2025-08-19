@@ -8,51 +8,103 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Client represents your business clients who use your KYC service
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  apiKey    String   @unique @default(cuid())
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  clientUsers ClientUser[]
+  webhooks    Webhook[]
+
+  @@index([apiKey])
+}
+
+// User represents the end-users who go through KYC
 model User {
-  id       String   @id @default(cuid())
-  email    String   @unique
-  phone    String   @unique
-  password String
-  name     String
-  role     UserRole
-  isActive Boolean  @default(true)
-
-  kycData KYC?
-
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("users")
+  // Relations
+  clientUsers ClientUser[]
+  kycSessions KycSession[]
 }
 
-enum UserRole {
-  CUSTOMER
+// Many-to-many relationship between clients and users
+model ClientUser {
+  id                 String   @id @default(cuid())
+  clientId           String
+  userId             String
+  clientUserId       String // The ID your client uses to reference this user
+  providerCustomerId String? // customerId returned by your KYC partner
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  client      Client       @relation(fields: [clientId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  kycSessions KycSession[]
+
+  @@unique([clientId, clientUserId]) // Ensure client can't have duplicate user references
+  @@unique([clientId, userId]) // One user per client
+  @@index([clientId])
+  @@index([userId])
 }
 
-model KYC {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+// KYC session tracking
+model KycSession {
+  id                String    @id @default(cuid())
+  clientUserId      String
+  status            KycStatus @default(NOT_STARTED)
+  kycLink           String? // Link returned by KYC provider
+  providerSessionId String? // Session ID from KYC provider
+  providerData      Json? // Store any additional data from provider
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  updatedAt         DateTime  @updatedAt
 
-  // Third-party KYC integration
-  kycProvider String? // "onramp", "plaid", etc.
-  kycId       String? @unique // External KYC ID from provider
-  kycData     Json? // Store any additional KYC data from provider
-  kycUrl      String? // URL to KYC document or verification page
+  // Relations
+  clientUser ClientUser @relation(fields: [clientUserId], references: [id])
+  User       User?      @relation(fields: [userId], references: [id])
+  userId     String?
 
-  kycStatus KYCStatus @default(NOT_STARTED)
+  @@index([status])
+  @@index([clientUserId])
+}
 
-  // Verification details
-  verifiedAt      DateTime?
-  rejectionReason String?
-
+// Webhook configuration for multiplexing events
+model Webhook {
+  id        String   @id @default(cuid())
+  clientId  String
+  url       String
+  secret    String? // For webhook signature verification
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("kyc_documents")
+  // Relations
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@index([clientId])
 }
 
-enum KYCStatus {
+// Enum for KYC status
+// enum KycStatus {
+//   PENDING
+//   IN_PROGRESS
+//   COMPLETED
+//   FAILED
+//   EXPIRED
+// }
+
+enum KycStatus {
   NOT_STARTED
   IN_PROGRESS
   BASIC_COMPLETED
