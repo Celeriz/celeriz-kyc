@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
 import { KycModule } from './kyc/kyc.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { KycModule } from './kyc/kyc.module';
       load: [configuration],
     }),
     KycModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
