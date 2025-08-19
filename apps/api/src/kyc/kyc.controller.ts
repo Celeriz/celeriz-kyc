@@ -15,12 +15,7 @@ import { StartKycResponseDto } from './dto/kyc-response.dto';
 @Controller('kyc')
 @UseGuards(ApiKeyGuard)
 @ApiTags('Users')
-@ApiSecurity('api_key')
-@ApiHeader({
-  name: 'x-api-key',
-  description: 'API Key for authentication',
-  required: true,
-})
+@ApiSecurity('X-API-KEY')
 export class KycController {
   constructor(private readonly kycService: KycService) {}
 

@@ -24,12 +24,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 @Controller('user')
 @UseGuards(ApiKeyGuard)
 @ApiTags('Users')
-@ApiSecurity('api_key')
-@ApiHeader({
-  name: 'x-api-key',
-  description: 'API Key for authentication',
-  required: true,
-})
+@ApiSecurity('X-API-KEY')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
