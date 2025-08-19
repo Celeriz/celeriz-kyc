@@ -1,115 +1,57 @@
 import {
-  BadRequestException,
+  BadGatewayException,
   Injectable,
-  InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
-import { KYCStatus, prisma } from '@repo/db';
+import { KycStatus, prisma } from '@repo/db';
 import { OnrampMoneyKycStatus } from 'src/types/onramp-money.types';
 import {
   getOnrampMoneyKycStatus,
   getOnrampMoneyKycUrl,
 } from 'src/apis/onramp-money/kyc';
-import { AuthenticatedUser } from 'src/types/user.types';
+import { StartKycResponseDto } from './dto/kyc-response.dto';
 
 @Injectable()
 export class KycService {
   constructor() {}
 
-  async getKycUrl(user: AuthenticatedUser): Promise<{
-    userId: string;
-    kycStatus: KYCStatus;
-    kycUrl: string;
-    kycId: string;
-  }> {
-    // try {
-    const kycData = await prisma.kYC.findUnique({
-      where: {
-        userId: user.id,
+  async startKyc(
+    clientId: string,
+    clientUserId: string,
+  ): Promise<StartKycResponseDto> {
+    const clientUser = await prisma.clientUser.findUnique({
+      where: { clientId_clientUserId: { clientId, clientUserId } },
+      include: {
+        user: {
+          include: { kycSession: true },
+        },
       },
     });
 
-    if (!kycData) {
-      throw new BadRequestException(
-        'KYC data not found for user, please contact support',
-      );
+    if (!clientUser) {
+      throw new NotFoundException('User not found');
     }
 
-    if (kycData.kycStatus === KYCStatus.NOT_STARTED) {
-      throw new BadRequestException(
-        'KYC process has not been started for this user',
-      );
+    // Check if user already has KYC (from any client)
+    if (clientUser.user.kycSession.status !== KycStatus.NOT_STARTED) {
+      const session = clientUser.user.kycSession;
+
+      // KYC in progress/completed, return existing session
+      return {
+        clientUserId: clientUser.clientUserId,
+        kycId: session.id,
+        kycLink: session.kycLink,
+        kycStatus: session.status,
+      };
     }
 
-    if (!kycData.kycUrl) {
-      throw new BadRequestException(
-        'KYC URL not available, please start the KYC process',
-      );
-    }
-
-    return {
-      userId: user.id,
-      kycStatus: kycData.kycStatus,
-      kycUrl: kycData.kycUrl,
-      kycId: kycData.kycId!,
-    };
-    // } catch (error: any) {
-    //   if (axios.isAxiosError(error)) {
-    //     console.log(error.response?.data);
-    //   }
-
-    //   throw new Error(
-    //     `Failed to get KYC URL: ${(error as Error).message || 'Unknown error'}`,
-    //   );
-    // }
-  }
-
-  async getUserKycStatus(user: AuthenticatedUser): Promise<{
-    userId: string;
-    status: KYCStatus;
-    kycId: string | null;
-    kycLink: string | null;
-  }> {
-    const kycData = await prisma.kYC.findUnique({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    if (!kycData) {
-      throw new InternalServerErrorException('KYC data not found for user');
-    }
-
-    return {
-      userId: user.id,
-      status: kycData.kycStatus,
-      kycId: kycData.kycId,
-      kycLink: kycData.kycUrl,
-    };
-  }
-
-  async startKycProcess(user: AuthenticatedUser): Promise<{
-    userId: string;
-    status: KYCStatus;
-    kycId: string;
-    kycLink: string;
-  }> {
-    const userKycData = await prisma.kYC.findUnique({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    if (userKycData?.kycStatus !== KYCStatus.NOT_STARTED) {
-      throw new BadRequestException(
-        'KYC process already started or completed for this user',
-      );
-    }
-
+    // Call KYC provider API
     const onrampKycData = await getOnrampMoneyKycUrl({
-      clientCustomerId: user.id,
-      email: user.email,
-      phoneNumber: user.phone,
+      email: clientUser.user.email,
+      clientCustomerId: clientUser.clientUserId,
+      phoneNumber: clientUser.user.phone,
       type: 'INDIVIDUAL',
+      customerId: clientUser.providerCustomerId || undefined,
     });
 
     let customerId: string | null = null;
@@ -124,9 +66,9 @@ export class KycService {
     if (onrampKycData.type === 'EXISTING_CUSTOMER') {
       // Pass customer ID to get existing KYC URL
       const onrampKycDataExisting = await getOnrampMoneyKycUrl({
-        clientCustomerId: user.id,
-        email: user.email,
-        phoneNumber: user.phone,
+        email: clientUser.user.email,
+        clientCustomerId: clientUser.clientUserId,
+        phoneNumber: clientUser.user.phone,
         type: 'INDIVIDUAL',
         customerId: onrampKycData.customerId,
       });
@@ -140,13 +82,11 @@ export class KycService {
     }
 
     if (!customerId || !kycUrl) {
-      throw new InternalServerErrorException(
-        'Failed to get KYC URL or customer ID from external service',
-      );
+      throw new BadGatewayException('Failed to get KYC URL or customer ID');
     }
 
     const onrampMoneyKycStatus = await getOnrampMoneyKycStatus(customerId);
-    let newKycStatus: KYCStatus = KYCStatus.IN_PROGRESS;
+    let newKycStatus: KycStatus = KycStatus.IN_PROGRESS;
 
     // Get status if the customer already existed
     if (onrampKycData.type === 'EXISTING_CUSTOMER') {
@@ -155,92 +95,46 @@ export class KycService {
       );
     }
 
-    const updatedKycData = await prisma.kYC.update({
+    const updatedKycSession = await prisma.kycSession.update({
       where: {
-        id: userKycData.id,
+        id: clientUser.user.kycSession.id,
       },
       data: {
-        kycId: customerId,
-        kycUrl: kycUrl,
-        kycStatus: newKycStatus,
+        providerSessionId: customerId,
+        kycLink: kycUrl,
+        status: newKycStatus,
         kycProvider: 'onramp.money',
       },
     });
 
     return {
-      userId: user.id,
-      kycId: updatedKycData.kycId!,
-      kycLink: updatedKycData.kycUrl!,
-      status: updatedKycData.kycStatus,
+      clientUserId: clientUser.clientUserId,
+      kycId: updatedKycSession.id!,
+      kycLink: updatedKycSession.kycLink!,
+      kycStatus: updatedKycSession.status,
     };
-  }
-
-  async updateKycStatusByUserId(
-    userId: string,
-    status: OnrampMoneyKycStatus,
-  ): Promise<{
-    userId: string;
-    kycId: string;
-    status: OnrampMoneyKycStatus;
-  }> {
-    try {
-      const kycData = await prisma.kYC.findUnique({
-        where: {
-          userId: userId,
-        },
-      });
-
-      if (!kycData) {
-        throw new InternalServerErrorException(
-          'KYC data not found, please contact support',
-        );
-      }
-
-      // TODO: Handle failure status (store failure reason)
-      const newKycStatus: KYCStatus =
-        KycService.onrampMoneyStatusToKYCStatus(status);
-
-      await prisma.kYC.update({
-        where: {
-          id: kycData.id,
-        },
-        data: {
-          kycStatus: newKycStatus,
-        },
-      });
-
-      return {
-        userId: userId,
-        kycId: kycData.kycId!,
-        status,
-      };
-    } catch (error) {
-      throw new Error(
-        `Failed to update KYC status: ${(error as Error).message || 'Unknown error'}`,
-      );
-    }
   }
 
   private static onrampMoneyStatusToKYCStatus(
     onrampMoneyStatus: OnrampMoneyKycStatus,
-  ): KYCStatus {
+  ): KycStatus {
     switch (onrampMoneyStatus) {
       case 'OTP_COMPLETED':
       case 'IN_REVIEW':
-        return KYCStatus.IN_PROGRESS;
+        return KycStatus.IN_PROGRESS;
       case 'COMPLETED':
       case 'BASIC_KYC_COMPLETED':
       case 'INTERMEDIATE_KYC_COMPLETED':
       case 'ADVANCE_KYC_COMPLETED':
-        return KYCStatus.BASIC_COMPLETED;
+        return KycStatus.BASIC_COMPLETED;
       case 'EDD_COMPLETED':
-        return KYCStatus.ADVANCED_COMPLETED;
+        return KycStatus.ADVANCED_COMPLETED;
       case 'TEMPORARY_FAILURE':
-        return KYCStatus.TEMP_FAILURE;
+        return KycStatus.TEMP_FAILURE;
       case 'PERMANENT_FAILURE':
-        return KYCStatus.PERMANENT_FAILURE;
+        return KycStatus.PERMANENT_FAILURE;
       default:
-        return KYCStatus.IN_PROGRESS;
+        return KycStatus.IN_PROGRESS;
     }
   }
 }
