@@ -2,9 +2,9 @@
 set -e
 
 echo "Installing dependencies..."
-npm install
+pnpm install
 
 echo "Building API and dependencies..."
-npx turbo build --filter=api
+pnpx turbo build --filter=api
 
 echo "API build complete!"
