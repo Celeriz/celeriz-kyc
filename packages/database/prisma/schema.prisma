@@ -34,23 +34,27 @@ model User {
 
   // Relations
   clientUsers ClientUser[]
-  kycSessions KycSession[]
+  kycSession  KycSession? // ONE KYC per user, shared across clients
 }
 
 // Many-to-many relationship between clients and users
 model ClientUser {
-  id                 String   @id @default(cuid())
+  id                 String  @id @default(cuid())
   clientId           String
   userId             String
   clientUserId       String // The ID your client uses to reference this user
   providerCustomerId String? // customerId returned by your KYC partner
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+
+  // Track if this client has access to the user's KYC
+  kycAccessGranted   Boolean   @default(false)
+  kycAccessGrantedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  client      Client       @relation(fields: [clientId], references: [id])
-  user        User         @relation(fields: [userId], references: [id])
-  kycSessions KycSession[]
+  client Client @relation(fields: [clientId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@unique([clientId, clientUserId]) // Ensure client can't have duplicate user references
   @@unique([clientId, userId]) // One user per client
@@ -58,25 +62,26 @@ model ClientUser {
   @@index([userId])
 }
 
-// KYC session tracking
+// KYC session tracking - One per User (shared across clients)
 model KycSession {
   id                String    @id @default(cuid())
-  clientUserId      String
+  userId            String    @unique // Makes it 1:1 with User
   status            KycStatus @default(NOT_STARTED)
   kycLink           String? // Link returned by KYC provider
   providerSessionId String? // Session ID from KYC provider
   providerData      Json? // Store any additional data from provider
-  startedAt         DateTime  @default(now())
-  completedAt       DateTime?
-  updatedAt         DateTime  @updatedAt
+
+  // Track which client initiated this KYC
+  initiatedByClientId String?
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  clientUser ClientUser @relation(fields: [clientUserId], references: [id])
-  User       User?      @relation(fields: [userId], references: [id])
-  userId     String?
+  user User @relation(fields: [userId], references: [id])
 
   @@index([status])
-  @@index([clientUserId])
 }
 
 // Webhook configuration for multiplexing events
