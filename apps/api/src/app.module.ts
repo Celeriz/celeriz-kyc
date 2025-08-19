@@ -1,12 +1,19 @@
 import { Module } from '@nestjs/common';
 
-import { LinksModule } from './links/links.module';
-
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
+import { ConfigModule } from '@nestjs/config';
+import configuration from './config/configuration';
+import { KycModule } from './kyc/kyc.module';
 
 @Module({
-  imports: [LinksModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+    }),
+    KycModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
