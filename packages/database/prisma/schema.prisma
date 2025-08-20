@@ -43,7 +43,7 @@ model ClientUser {
   clientId           String
   userId             String
   clientUserId       String // The ID your client uses to reference this user
-  providerCustomerId String? // customerId returned by your KYC partner
+  providerCustomerId String? // customerId returned by your KYC partner (TODO: check this)
 
   // Track if this client has access to the user's KYC
   kycAccessGranted   Boolean   @default(false)

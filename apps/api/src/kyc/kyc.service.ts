@@ -50,16 +50,17 @@ export class KycService {
 
     // Call KYC provider API
     const onrampKycData = await getOnrampMoneyKycUrl({
-      email: clientUser.user.email,
-      clientCustomerId: clientUser.clientUserId,
-      phoneNumber: clientUser.user.phone,
       type: 'INDIVIDUAL',
+      email: clientUser.user.email,
+      phoneNumber: clientUser.user.phone,
+      clientCustomerId: clientUser.user.id,
       customerId: clientUser.providerCustomerId || undefined,
     });
 
     let customerId: string | null = null;
     let kycUrl: string | null = null;
 
+    // New customer with provider, we get both customerId and KYC URL
     if (onrampKycData.type === 'NEW_CUSTOMER') {
       customerId = onrampKycData.customerId;
       kycUrl = onrampKycData.kycUrl;
@@ -69,10 +70,10 @@ export class KycService {
     if (onrampKycData.type === 'EXISTING_CUSTOMER') {
       // Pass customer ID to get existing KYC URL
       const onrampKycDataExisting = await getOnrampMoneyKycUrl({
-        email: clientUser.user.email,
-        clientCustomerId: clientUser.clientUserId,
-        phoneNumber: clientUser.user.phone,
         type: 'INDIVIDUAL',
+        email: clientUser.user.email,
+        phoneNumber: clientUser.user.phone,
+        clientCustomerId: clientUser.user.id,
         customerId: onrampKycData.customerId,
       });
 
@@ -88,11 +89,13 @@ export class KycService {
       throw new BadGatewayException('Failed to get KYC URL or customer ID');
     }
 
-    const onrampMoneyKycStatus = await getOnrampMoneyKycStatus(customerId);
+    // If the user is new, we set the status to IN_PROGRESS
     let newKycStatus: KycStatus = KycStatus.IN_PROGRESS;
 
     // Get status if the customer already existed
     if (onrampKycData.type === 'EXISTING_CUSTOMER') {
+      const onrampMoneyKycStatus = await getOnrampMoneyKycStatus(customerId);
+
       newKycStatus = KycService.onrampMoneyStatusToKYCStatus(
         onrampMoneyKycStatus.status,
       );

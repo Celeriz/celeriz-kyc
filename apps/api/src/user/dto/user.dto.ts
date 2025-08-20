@@ -1,16 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString } from 'class-validator';
 
 export class CreateOrGetUserDto {
   @IsString()
-  @ApiProperty()
+  @IsEmail()
+  @ApiProperty({
+    description: 'Email address of the user',
+  })
   email: string;
 
   @IsString()
-  @ApiProperty()
+  @IsPhoneNumber()
+  @ApiProperty({
+    example: '+911234567890',
+    description: 'Phone number in format +{CountryCode}{10-digit phone number}',
+  })
   phone: string;
 
   @IsString()
-  @ApiProperty()
+  @IsNotEmpty()
+  @ApiProperty({
+    description: 'Unique identifier for the user in the client system',
+  })
   clientUserId: string;
 }
