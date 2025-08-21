@@ -101,15 +101,6 @@ model Webhook {
   @@index([clientId])
 }
 
-// Enum for KYC status
-// enum KycStatus {
-//   PENDING
-//   IN_PROGRESS
-//   COMPLETED
-//   FAILED
-//   EXPIRED
-// }
-
 enum KycStatus {
   NOT_STARTED
   IN_PROGRESS
