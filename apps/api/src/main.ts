@@ -6,6 +6,7 @@ import {
   VersioningType,
 } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,7 +15,14 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: VERSION_NEUTRAL,
   });
-  app.useGlobalPipes(new ValidationPipe());
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      enableDebugMessages: true,
+    }),
+  );
+  app.useGlobalFilters(new PrismaExceptionFilter());
+
   app.enableCors({
     origin: '*',
   });

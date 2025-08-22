@@ -19,5 +19,14 @@
     "@types/node": "^24.0.12",
     "prisma": "^6.11.1"
   },
-  "exports": "./dist/index.js"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "default": "./dist/errors.js"
+    }
+  }
 }
