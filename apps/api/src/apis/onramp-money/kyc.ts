@@ -1,3 +1,4 @@
+import { BadGatewayException, BadRequestException } from '@nestjs/common';
 import axios, { AxiosError } from 'axios';
 import onrampApi from 'src/config/axios';
 import {
@@ -73,13 +74,13 @@ export async function getOnrampMoneyKycUrl(data: {
           customerId,
         };
       } else {
-        throw new Error(
+        throw new BadRequestException(
           `Failed to get KYC URL: ${axiosError.response?.data.error || 'Unknown error'}`,
         );
       }
     }
 
-    throw new Error(
+    throw new BadGatewayException(
       `Failed to get KYC URL: ${(error as Error).message || 'Unknown error'}`,
     );
   }
@@ -90,7 +91,7 @@ export async function getOnrampMoneyKycUrl(data: {
  */
 export async function getOnrampMoneyKycStatus(customerId: string) {
   if (!customerId) {
-    throw new Error('Customer ID is required to get KYC status');
+    throw new BadRequestException('Customer ID is required to get KYC status');
   }
 
   try {
@@ -117,12 +118,12 @@ export async function getOnrampMoneyKycStatus(customerId: string) {
         error: string;
       }>;
 
-      throw new Error(
+      throw new BadRequestException(
         `Failed to get KYC Status: ${axiosError.response?.data.error || 'Unknown error'}`,
       );
     }
 
-    throw new Error(
+    throw new BadGatewayException(
       `Failed to get KYC URL: ${(error as Error).message || 'Unknown error'}`,
     );
   }
