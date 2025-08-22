@@ -13,6 +13,7 @@
         "lib/**"
       ],
       "env": [
+        "ENVIORNMENT",
         "DATABASE_URL",
         "PORT",
         "FRONTEND_URL",

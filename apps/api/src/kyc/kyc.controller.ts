@@ -1,4 +1,12 @@
-import { Controller, Get, HttpStatus, Param, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { KycService } from './kyc.service';
 import {
   ApiOperation,
@@ -10,6 +18,7 @@ import { CurrentClient } from 'src/common/decorators/client.decorator';
 import { AuthClient } from 'src/types/client.types';
 import { ApiKeyGuard } from 'src/common/guards/api-key.guard';
 import { StartKycResponseDto } from './dto/kyc-response.dto';
+import { ChangeKYCStatusDto } from './dto/kyc.dto';
 
 @Controller('kyc')
 @UseGuards(ApiKeyGuard)
@@ -44,5 +53,28 @@ export class KycController {
     @Param('clientUserId') clientUserId: string,
   ) {
     return this.kycService.startKyc(client.id, clientUserId);
+  }
+
+  @Patch('status/:clientUserId')
+  @ApiOperation({
+    summary: 'Change KYC verification status (SANDBOX ONLY)',
+    description:
+      'This endpoint is for testing purposes only and should not be used in production.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: StartKycResponseDto })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid API key',
+  })
+  changeKycStatusByClientId(
+    @CurrentClient() client: AuthClient,
+    @Param('clientUserId') clientUserId: string,
+    @Body() dto: ChangeKYCStatusDto,
+  ) {
+    return this.kycService.changeKycStatusByClientId(
+      client.id,
+      clientUserId,
+      dto.status,
+    );
   }
 }

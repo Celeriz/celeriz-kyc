@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,10 +14,11 @@ import {
   KycStatusResponseDto,
   StartKycResponseDto,
 } from './dto/kyc-response.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class KycService {
-  constructor() {}
+  constructor(private readonly configService: ConfigService) {}
 
   async startKyc(
     clientId: string,
@@ -156,6 +158,64 @@ export class KycService {
       kycId: session.id,
       kycLink: session.kycLink || '',
       kycStatus: session.status,
+    };
+  }
+
+  async changeKycStatusByClientId(
+    clientId: string,
+    clientUserId: string,
+    newStatus: KycStatus,
+  ): Promise<KycStatusResponseDto> {
+    if (this.configService.get<string>('ENVIORNMENT') !== 'sandbox') {
+      throw new BadGatewayException(
+        'This endpoint is only available in sandbox environment',
+      );
+    }
+
+    if (newStatus === KycStatus.NOT_STARTED) {
+      throw new BadRequestException(
+        'Cannot change KYC status to NOT_STARTED, use other status values',
+      );
+    }
+
+    const clientUser = await prisma.clientUser.findUnique({
+      where: {
+        clientId_clientUserId: {
+          clientId: clientId,
+          clientUserId,
+        },
+      },
+      include: {
+        user: {
+          include: { kycSession: true },
+        },
+      },
+    });
+
+    if (!clientUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!clientUser.user.kycSession) {
+      throw new NotFoundException(
+        'KYC session not found for user, please start new KYC session',
+      );
+    }
+
+    const session = clientUser.user.kycSession;
+
+    const updatedSssion = await prisma.kycSession.update({
+      where: { id: session.id },
+      data: {
+        status: newStatus,
+      },
+    });
+
+    return {
+      clientUserId: clientUser.clientUserId,
+      kycId: updatedSssion.id,
+      kycLink: updatedSssion.kycLink || '',
+      kycStatus: updatedSssion.status,
     };
   }
 
