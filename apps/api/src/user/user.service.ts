@@ -76,4 +76,18 @@ export class UserService {
       phone: user.phone,
     };
   }
+
+  async getUsersByClientId(clientId: string): Promise<UserResponseDto[]> {
+    const clientUsers = await prisma.clientUser.findMany({
+      where: { clientId },
+      include: { user: true },
+    });
+
+    return clientUsers.map((cu) => ({
+      userId: cu.userId,
+      clientUserId: cu.clientUserId,
+      email: cu.user.email,
+      phone: cu.user.phone,
+    }));
+  }
 }

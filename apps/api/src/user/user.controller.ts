@@ -41,6 +41,17 @@ export class UserController {
     return this.userService.createOrGetUser(client.id, dto);
   }
 
+  @Get()
+  @ApiOperation({ summary: 'Gel All Client Users' })
+  @ApiResponse({ status: HttpStatus.OK, type: UserResponseDto, isArray: true })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid API key',
+  })
+  async getUsersByClientId(@CurrentClient() client: AuthClient) {
+    return this.userService.getUsersByClientId(client.id);
+  }
+
   @Get(':clientUserId')
   @ApiOperation({ summary: 'Get user by client user ID' })
   @ApiResponse({ status: HttpStatus.OK, type: UserResponseDto })
