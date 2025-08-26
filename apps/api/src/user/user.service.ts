@@ -18,7 +18,7 @@ export class UserService {
       where: { email },
       update: { phone },
       create: {
-        email,
+        email: email.toLocaleLowerCase(),
         phone,
         kycSession: {
           create: {
