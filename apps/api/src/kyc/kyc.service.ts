@@ -153,8 +153,11 @@ export class KycService {
 
     const session = clientUser.user.kycSession;
 
-    // If KYC is in progress, check with provider for latest status
-    if (session.status === KycStatus.IN_PROGRESS) {
+    // Get latest status from provider if not in NOT_STARTED or ADVANCED_COMPLETED
+    if (
+      session.status !== KycStatus.NOT_STARTED &&
+      session.status !== KycStatus.ADVANCED_COMPLETED
+    ) {
       const onrampMoneyKycStatus = await getOnrampMoneyKycStatus(
         session.providerSessionId!,
       );
