@@ -153,6 +153,34 @@ export class KycService {
 
     const session = clientUser.user.kycSession;
 
+    // If KYC is in progress, check with provider for latest status
+    if (session.status === KycStatus.IN_PROGRESS) {
+      const onrampMoneyKycStatus = await getOnrampMoneyKycStatus(
+        session.providerSessionId!,
+      );
+
+      const newKycStatus = KycService.onrampMoneyStatusToKYCStatus(
+        onrampMoneyKycStatus.status,
+      );
+
+      // If status has changed, update in DB
+      if (session.status !== newKycStatus) {
+        const updatedSession = await prisma.kycSession.update({
+          where: { id: session.id },
+          data: {
+            status: newKycStatus,
+          },
+        });
+
+        return {
+          clientUserId: clientUser.clientUserId,
+          kycId: updatedSession.id,
+          kycLink: updatedSession.kycLink || '',
+          kycStatus: updatedSession.status,
+        };
+      }
+    }
+
     return {
       clientUserId: clientUser.clientUserId,
       kycId: session.id,
