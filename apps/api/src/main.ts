@@ -50,7 +50,7 @@ async function bootstrap() {
     },
   });
 
-  const PORT = 8000;
+  const PORT = Number(process.env.PORT) || 8000;
 
   await app.listen(PORT);
 
